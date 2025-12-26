@@ -12,27 +12,27 @@ ISSUE: "maxHeartbeats" is Lean-specific jargon not explained; readers won't unde
 TEXT: "#doc (Page) "Type-safe JSON in Lean" =>"
 ISSUE: This Verso-specific syntax is used without explanation of what #doc does or how it works.
 
-- real
+- fixed
 TEXT: "nested inductive datatypes parameters cannot contain local variables"
 ISSUE: "kernel" and "local variables" in this context refer to Lean's type theory internals that require more than "a bit of Lean" to understand.
 
-- real
+- fixed
 TEXT: "Std.TreeMap.Raw"
 ISSUE: The relationship between Std.TreeMap and Std.TreeMap.Raw, and what "well-formed" means here, is not clear without more Lean experience.
 
-- real
+- fixed
 TEXT: "List.attach"
 ISSUE: This function is central to the explanation but its purpose (attaching membership proofs) is only implied, not stated.
 
-- real
+- fixed
 TEXT: "well-founded recursion"
 ISSUE: This is an advanced concept in type theory that goes beyond basic Lean knowledge.
 
-- real
+- fixed
 TEXT: "ReflBEq Json"
 ISSUE: The ReflBEq typeclass is used without explanation of what reflexive boolean equality means or why it's needed.
 
-- real 
+- fixed 
 TEXT: "heterogeneous lists"
 ISSUE: This data structure concept is mentioned as ideal but not explained; readers may confuse it with regular lists.
 
@@ -42,23 +42,23 @@ ISSUE: This Lean tactic is used without explaining that it runs computations at 
 
 # Analysis of Unclear and Confusing Sentences
 
-- real
+- fixed
 TEXT: To have type-safe JSON, you can create inductive data types, and you can validate during runtime.
 ISSUE: The relationship between these two approaches is unclear - are they alternatives, complementary methods, or sequential steps?
 
-- real
+- fixed
 TEXT: So I finished the [`json-schema-lean`](https://github.com/CAIMEOX/json-schema-lean/) library, since Vega-Lite has a [schema](https://vega.github.io/schema/vega-lite/v6.4.1.json).
 ISSUE: "Finished" is ambiguous - later text indicates this was someone else's GSoC project. Did you complete it, contribute to it, or fork it?
 
-- real
+- fixed
 TEXT: Runtime validation just doesn't give you much.
 ISSUE: "Doesn't give you much" is vague - much of what? Type safety? Compile-time guarantees? Be specific.
 
-- real
+- fixed
 TEXT: If you know that a JSON passed validation, then you can't guarantee any properties of your data in the compiler.
 ISSUE: This seems contradictory - if JSON passed validation, why can't properties be guaranteed? The distinction between runtime and compile-time guarantees needs clarification.
 
-- real
+- fixed
 TEXT: When every union has to be tagged, as in Lean, even when they are rarely used, then you still have to care about that.
 ISSUE: "care about that" - unclear what specific aspect needs attention (the tagging syntax? the union variants?).
 
@@ -66,19 +66,19 @@ ISSUE: "care about that" - unclear what specific aspect needs attention (the tag
 TEXT: The main branch was incomplete, but there was nice [testing infrastructure](https://github.com/bowtie-json-schema/bowtie).
 ISSUE: The logical connection is unclear - how does testing infrastructure relate to the main branch being incomplete?
 
-- real
+- fixed
 TEXT: This project might be one of the only times in 2025 where AI didn't let me down (except for all the annoying reference stuff I had to implement).
 ISSUE: The parenthetical contradicts the main claim - if you had to implement annoying stuff yourself, did AI really not let you down?
 
-- real
+- fixed
 TEXT: The schema turned into a [big mutual inductive type](https://github.com/josephmckinsey/json-schema-lean/blob/27846b7410a8fd0955ce09b8c36b3904eb895a0b/JsonSchema/Schema.lean#L50), since there are a few special schemas like the JSON value `true`.
 ISSUE: The causal connection between having special schemas and needing mutual induction is unclear.
 
-- real
+- fixed
 TEXT: There are too many features I want in a testing library to use it forever.
 ISSUE: This logic seems backwards - does the library have too many features, or is it missing features you want?
 
-- real
+- fixed
 TEXT: Lean requires mutually recursive types to be put in `mutual` blocks, so [Tarjan's strongly connected components](https://en.wikipedia.org/wiki/Tarjan's_strongly_connected_components_algorithm) lets me detect the dependencies and cycles.
 ISSUE: The causal link is unclear - why does the `mutual` block requirement specifically lead to needing Tarjan's algorithm for dependency detection?
 
@@ -86,19 +86,19 @@ ISSUE: The causal link is unclear - why does the `mutual` block requirement spec
 TEXT: Although it would have been fun to write and debug it myself, Claude could do it ☹️.
 ISSUE: This contradicts the earlier positive statement about AI helping; the emotional reaction is unclear - are you disappointed or relieved?
 
-- real
+- fixed
 TEXT: Once I saw a `RectConfig`, I realized this was not going to be fun.
 ISSUE: What specific aspect of `RectConfig` caused this realization? The lengthy code shown after doesn't explain why this particular structure was the breaking point.
 
-- real REAL
+- fixed
 TEXT: If the entire JSON is known at compile time, this is completely trivial, since you can use `by native_decide` to check whether `validate schema json` passes.
 ISSUE: "Completely trivial" contradicts the extensive complexity discussed throughout the post.
 
-- real
+- fixed
 TEXT: That sounds great, but checking if JSON Schema's `validate` _terminates_ is already pretty difficult.
 ISSUE: The connection between proving validation would pass and checking termination is unclear - why does one require the other?
 
-- real
+- fixed
 TEXT: Nested inductives are massaged much more to make them appear normal. They are not normal.
 ISSUE: "Massaged" is vague technical terminology, and "not normal" doesn't specify what unusual properties they have.
 
@@ -106,35 +106,35 @@ ISSUE: "Massaged" is vague technical terminology, and "not normal" doesn't speci
 TEXT: The kernel errors with `nested inductive datatypes parameters cannot contain local variables`
 ISSUE: Missing clear quotation formatting makes it unclear where the error message begins and ends.
 
-- real
+- fixed
 TEXT: Sticking with `Std.TreeMap.Raw` defangs many theorems for `Std.TreeMap`.
 ISSUE: "Defangs" is metaphorical - specifically state what limitations this creates (e.g., "makes many theorems inapplicable" or "removes the ability to use").
 
-- real
+- fixed
 TEXT: In retrospect, this was pretty simple.
 ISSUE: This contradicts the lengthy, detailed explanation that preceded it, creating confusion about the actual difficulty level.
 
-- real
+- fixed
 TEXT: I currently believe you can do it with `.attach`, but at the time, I ran out of patience and cleverness, so I reimplemented the lemma instead.
 ISSUE: "Ran out of cleverness" is imprecise - what technical obstacle or knowledge gap caused you to choose reimplementation?
 
-- real
+- fixed
 TEXT: After handling all those JSON difficulties, most of my other problems arose from failures in my blueprint.
 ISSUE: "Failures in my blueprint" is vague - were these logical errors, missing cases, or incorrect assumptions?
 
-- real
+- fixed
 TEXT: I don't find the details particularly interesting.
 ISSUE: This statement raises the question of why these details are included in the blog post at all.
 
-- real
+- fixed
 TEXT: Now TypeScript mistakenly believes that `person.id` is defined.
 ISSUE: The example doesn't show where `id` is supposed to come from in the type definition, making the mistake unclear.
 
-- real
+- fixed
 TEXT: subtyping is a constant.
 ISSUE: "Is a constant" what? A constant concern? Constant feature? The phrasing is incomplete.
 
-- real
+- fixed
 TEXT: In Julia, we overuse subtyping for dispatch, for compiler speed, correctness, units, etc.
 ISSUE: "We overuse" - unclear who this refers to, and whether this overuse is problematic or just common practice.
 
