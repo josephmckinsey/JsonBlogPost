@@ -1,180 +1,51 @@
-I found several accessibility issues for a CS major familiar with JSON and a bit of Lean:
+The text does not accomplish its intended function. A Lean user in a hurry would struggle to determine that `json-schema-json` (or `json-schema-lean`) is production ready, and the text contains multiple sections that actively undermine this message.
 
-- not important
-TEXT: "Verso Genre Blog"
-ISSUE: Verso is introduced without explanation; readers won't know it's a documentation framework for Lean.
+**Critical Issues:**
 
-- not important
-TEXT: "set_option maxHeartbeats 800000"
-ISSUE: "maxHeartbeats" is Lean-specific jargon not explained; readers won't understand what this limits or why such a high value is needed.
+TEXT: "Type-safe JSON in Lean" [title]
+ISSUE: The title doesn't mention production readiness or the library name (`json-schema-json`/`json-schema-lean`), so a hurried reader won't know what this post is announcing.
 
-- not important
-TEXT: "#doc (Page) "Type-safe JSON in Lean" =>"
-ISSUE: This Verso-specific syntax is used without explanation of what #doc does or how it works.
+TEXT: "I wanted to explore using Vega-Lite for plotting in Lean, and I wanted to have some sort of check. So in one giant PR, I mostly finished the json-schema-lean library"
+ISSUE: "mostly finished" does not communicate "production ready" - it suggests incomplete work. A hurried reader needs a clear statement of readiness.
 
-- fixed
-TEXT: "nested inductive datatypes parameters cannot contain local variables"
-ISSUE: "kernel" and "local variables" in this context refer to Lean's type theory internals that require more than "a bit of Lean" to understand.
+TEXT: "Skip to {ref plot}[the end] to see usage."
+ISSUE: Telling a hurried reader to skip to the end indicates the opening doesn't serve their needs - it should state production readiness immediately.
 
-- fixed
-TEXT: "Std.TreeMap.Raw"
-ISSUE: The relationship between Std.TreeMap and Std.TreeMap.Raw, and what "well-formed" means here, is not clear without more Lean experience.
+TEXT: "I became dissatisfied with how JSON Schema code generation produces unergonomic types... Meanwhile, most languages don't track runtime validation..."
+ISSUE: This paragraph discusses dissatisfaction and explores alternative approaches, suggesting the main library is inadequate. This contradicts a production-ready message.
 
-- fixed
-TEXT: "List.attach"
-ISSUE: This function is central to the explanation but its purpose (attaching membership proofs) is only implied, not stated.
+TEXT: Entire "Step 1: JSON Schema in Lean" section
+ISSUE: This development narrative (how features were implemented, what was difficult) doesn't inform a hurried reader about current production status or capabilities.
 
-- fixed
-TEXT: "well-founded recursion"
-ISSUE: This is an advanced concept in type theory that goes beyond basic Lean knowledge.
+TEXT: "Despite dependent typing being really great since you can prove theorems, it's not ideal for things like plotting libraries."
+ISSUE: Highlighting where the approach is "not ideal" undermines production readiness for a hurried reader who needs to know what works well now.
 
-- fixed
-TEXT: "ReflBEq Json"
-ISSUE: The ReflBEq typeclass is used without explanation of what reflexive boolean equality means or why it's needed.
+TEXT: "Luckily there was already a `json-schema-lean` library--a GSoC 2024 project. The main branch was incomplete"
+ISSUE: Mentioning the library was incomplete without clearly stating it's now complete creates doubt about production status.
 
-- fixed 
-TEXT: "heterogeneous lists"
-ISSUE: This data structure concept is mentioned as ideal but not explained; readers may confuse it with regular lists.
+TEXT: "I discovered that there were a lot of features I never use nor want to"
+ISSUE: This suggests the library includes unwanted complexity, which doesn't support a production-ready message.
 
-- fixed
-TEXT: "by native_decide"
-ISSUE: This Lean tactic is used without explaining that it runs computations at compile time to prove propositions.
+TEXT: Entire "Step 1.1: URIs" section (and subsections)
+ISSUE: This extended tangent about implementing a URI library doesn't inform the reader about json-schema production readiness.
 
-# Analysis of Unclear and Confusing Sentences
+TEXT: "## What doesn't work? Several Bowtie tests require you to read referenced JSON schemas on the fly from a URL. Lean does not have a good URL library, so I just decided to give up on that part."
+ISSUE: A section titled "What doesn't work?" followed by describing abandoned features directly contradicts "production ready" for a hurried reader.
 
-- fixed
-TEXT: To have type-safe JSON, you can create inductive data types, and you can validate during runtime.
-ISSUE: The relationship between these two approaches is unclear - are they alternatives, complementary methods, or sequential steps?
+TEXT: "## Step 3: Code Gen with Vega-Lite - How did code gen work with Vega-Lite? • Mutual induction is still broken, oops? • It would take several minutes to compile, and it's >15,000 lines. • All the code is too ugly to use."
+ISSUE: "still broken" and "too ugly to use" explicitly state the feature doesn't work well, contradicting production readiness.
 
-- fixed
-TEXT: So I finished the [`json-schema-lean`](https://github.com/CAIMEOX/json-schema-lean/) library, since Vega-Lite has a [schema](https://vega.github.io/schema/vega-lite/v6.4.1.json).
-ISSUE: "Finished" is ambiguous - later text indicates this was someone else's GSoC project. Did you complete it, contribute to it, or fork it?
+TEXT: "# Back to the drawing board"
+ISSUE: This entire section heading suggests starting over because the previous approach failed - the opposite of production ready.
 
-- fixed
-TEXT: Runtime validation just doesn't give you much.
-ISSUE: "Doesn't give you much" is vague - much of what? Type safety? Compile-time guarantees? Be specific.
+TEXT: Sections on TypeScript, Blueprint, subtyping, narrowing
+ISSUE: These extensive theoretical explorations don't inform a hurried reader about what's production ready now - they read as ongoing research.
 
-- fixed
-TEXT: If you know that a JSON passed validation, then you can't guarantee any properties of your data in the compiler.
-ISSUE: This seems contradictory - if JSON passed validation, why can't properties be guaranteed? The distinction between runtime and compile-time guarantees needs clarification.
+TEXT: "I still want to plot something, so how will I do that? I'm not so gung-ho about translating JSON Schema into my JsonType, so for now, I'll just do runtime checking"
+ISSUE: "for now" and choosing a workaround suggests the preferred approach isn't ready.
 
-- fixed
-TEXT: When every union has to be tagged, as in Lean, even when they are rarely used, then you still have to care about that.
-ISSUE: "care about that" - unclear what specific aspect needs attention (the tagging syntax? the union variants?).
+TEXT: "## Other potential improvements"
+ISSUE: Ending with a list of future improvements rather than highlighting current production capabilities leaves the hurried reader uncertain about what's ready now.
 
-- not relevant
-TEXT: The main branch was incomplete, but there was nice [testing infrastructure](https://github.com/bowtie-json-schema/bowtie).
-ISSUE: The logical connection is unclear - how does testing infrastructure relate to the main branch being incomplete?
-
-- fixed
-TEXT: This project might be one of the only times in 2025 where AI didn't let me down (except for all the annoying reference stuff I had to implement).
-ISSUE: The parenthetical contradicts the main claim - if you had to implement annoying stuff yourself, did AI really not let you down?
-
-- fixed
-TEXT: The schema turned into a [big mutual inductive type](https://github.com/josephmckinsey/json-schema-lean/blob/27846b7410a8fd0955ce09b8c36b3904eb895a0b/JsonSchema/Schema.lean#L50), since there are a few special schemas like the JSON value `true`.
-ISSUE: The causal connection between having special schemas and needing mutual induction is unclear.
-
-- fixed
-TEXT: There are too many features I want in a testing library to use it forever.
-ISSUE: This logic seems backwards - does the library have too many features, or is it missing features you want?
-
-- fixed
-TEXT: Lean requires mutually recursive types to be put in `mutual` blocks, so [Tarjan's strongly connected components](https://en.wikipedia.org/wiki/Tarjan's_strongly_connected_components_algorithm) lets me detect the dependencies and cycles.
-ISSUE: The causal link is unclear - why does the `mutual` block requirement specifically lead to needing Tarjan's algorithm for dependency detection?
-
-- not relevant
-TEXT: Although it would have been fun to write and debug it myself, Claude could do it ☹️.
-ISSUE: This contradicts the earlier positive statement about AI helping; the emotional reaction is unclear - are you disappointed or relieved?
-
-- fixed
-TEXT: Once I saw a `RectConfig`, I realized this was not going to be fun.
-ISSUE: What specific aspect of `RectConfig` caused this realization? The lengthy code shown after doesn't explain why this particular structure was the breaking point.
-
-- fixed
-TEXT: If the entire JSON is known at compile time, this is completely trivial, since you can use `by native_decide` to check whether `validate schema json` passes.
-ISSUE: "Completely trivial" contradicts the extensive complexity discussed throughout the post.
-
-- fixed
-TEXT: That sounds great, but checking if JSON Schema's `validate` _terminates_ is already pretty difficult.
-ISSUE: The connection between proving validation would pass and checking termination is unclear - why does one require the other?
-
-- fixed
-TEXT: Nested inductives are massaged much more to make them appear normal. They are not normal.
-ISSUE: "Massaged" is vague technical terminology, and "not normal" doesn't specify what unusual properties they have.
-
-- not important
-TEXT: The kernel errors with `nested inductive datatypes parameters cannot contain local variables`
-ISSUE: Missing clear quotation formatting makes it unclear where the error message begins and ends.
-
-- fixed
-TEXT: Sticking with `Std.TreeMap.Raw` defangs many theorems for `Std.TreeMap`.
-ISSUE: "Defangs" is metaphorical - specifically state what limitations this creates (e.g., "makes many theorems inapplicable" or "removes the ability to use").
-
-- fixed
-TEXT: In retrospect, this was pretty simple.
-ISSUE: This contradicts the lengthy, detailed explanation that preceded it, creating confusion about the actual difficulty level.
-
-- fixed
-TEXT: I currently believe you can do it with `.attach`, but at the time, I ran out of patience and cleverness, so I reimplemented the lemma instead.
-ISSUE: "Ran out of cleverness" is imprecise - what technical obstacle or knowledge gap caused you to choose reimplementation?
-
-- fixed
-TEXT: After handling all those JSON difficulties, most of my other problems arose from failures in my blueprint.
-ISSUE: "Failures in my blueprint" is vague - were these logical errors, missing cases, or incorrect assumptions?
-
-- fixed
-TEXT: I don't find the details particularly interesting.
-ISSUE: This statement raises the question of why these details are included in the blog post at all.
-
-- fixed
-TEXT: Now TypeScript mistakenly believes that `person.id` is defined.
-ISSUE: The example doesn't show where `id` is supposed to come from in the type definition, making the mistake unclear.
-
-- fixed
-TEXT: subtyping is a constant.
-ISSUE: "Is a constant" what? A constant concern? Constant feature? The phrasing is incomplete.
-
-- fixed
-TEXT: In Julia, we overuse subtyping for dispatch, for compiler speed, correctness, units, etc.
-ISSUE: "We overuse" - unclear who this refers to, and whether this overuse is problematic or just common practice.
-
-- not important
-TEXT: Something to look into.
-ISSUE: Fragment sentence - unclear who should look into this or when.
-
-- real
-TEXT: Mustache templating with multi-line strings would make it fairly trivial to just write [`d3.js`](https://d3js.org/what-is-d3).
-ISSUE: "Trivial to just write" what exactly? D3.js visualizations? The whole library? Unclear scope.
-
-Overall, this text provides substantial value to a CS major familiar with JSON and Lean. However, there are a few sections that may not provide clear value to this specific reader:
-
-- not important
-TEXT: "[*Uniform Resource Identifiers*](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier) are special strings that serve as semantic IDs. They don't quite provide a unique value, but they often tell you something about some digital resource. [URLs](https://en.wikipedia.org/wiki/URL) are a subtype of URIs. A URL is a URI plus the protocol to retrieve the URL. The [URI spec (RFC 3986)](https://www.rfc-editor.org/rfc/rfc3986) breaks URI into `URI = scheme ":" ["//" authority] path ["?" query] ["#" fragment]`, and it defines the percent-encoding and decoding (like why Google replaces spaces with `%20` in the results URL)."
-
-ISSUE: This provides overly basic explanation of URIs/URLs for a CS major. The reader likely already understands these concepts and doesn't need Wikipedia-level definitions or the Google %20 example.
-
----
-
-TEXT: "Although it would have been fun to write and debug it myself, Claude could do it ☹️."
-
-ISSUE: The emotional aside about Claude doesn't provide technical value or actionable insight for the reader. It's a personal reflection that doesn't advance understanding.
-
----
-
-- real
-TEXT: "I decided that I should stop looking at the TypeScript source code, and also I am going to check field properties as my proof of concept."
-
-ISSUE: The flippant comment about stopping TypeScript source code review doesn't explain what was learned or why the decision matters technically.
-
----
-
-- real
-TEXT: "Given that my day job involves more Julia than anything else, subtyping is a constant. In Julia, we overuse subtyping for dispatch, for compiler speed, correctness, units, etc. For plotting and array manipulation, it works well. Even object inheritance (a form of subtyping in my opinion) has its place."
-
-ISSUE: This tangent into Julia usage and the author's day job doesn't connect clearly to the JSON/Lean narrative. The insights about subtyping applications are valid but feel disconnected from the main thread.
-
----
-- real
-TEXT: "### Json Pointer Fragments\n\nOn a side note, [RFC 6901](https://www.rfc-editor.org/rfc/rfc6901) describes how JSON pointer fragments trailing on a URI point to part of a JSON object. Of course there's another spec."
-
-ISSUE: This section mentions JSON Pointer but provides no explanation of how it was handled, why it mattered to the implementation, or what challenges it presented. The sarcastic "of course there's another spec" doesn't substitute for technical content.
+**Structural Issue:**
+The entire document is structured as a development journey rather than a status announcement. A hurried reader needs: (1) Clear statement of production readiness upfront, (2) What works well, (3) Known limitations, (4) How to use it. This text provides an exploratory narrative instead.

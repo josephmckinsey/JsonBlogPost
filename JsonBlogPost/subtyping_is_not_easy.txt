@@ -1,0 +1,42 @@
+The text does **not** accomplish its intended function effectively. While it demonstrates that subtyping is *possible* in Lean, it fails to convince that it's *useful* or *not too difficult* for most readers. Here are the main issues:
+
+TEXT: "# Step 1: JSON Schema in Lean" through "Once I had the basic URI interface..."
+ISSUE: These sections spend extensive time on JSON Schema validation implementation details that don't relate to subtyping. A reader waiting to be convinced about subtyping may lose patience or forget the thesis during this long detour.
+
+TEXT: "## Step 1.1: URIs" through the entire URI subsection
+ISSUE: This is a side quest within a side quest. It demonstrates complexity but doesn't advance the argument that subtyping is useful or approachable.
+
+TEXT: "## Step 1.1.1: Testing" section
+ISSUE: Describing your custom testing library implementation is unrelated to convincing someone about subtyping's merits for JSON.
+
+TEXT: "### A slight detour: Json Pointer Fragments"
+ISSUE: Another detour that adds no support for the subtyping thesis.
+
+TEXT: Opening paragraphs before "# Step 1"
+ISSUE: The post doesn't establish upfront that it's about subtyping. The reader learns about JSON Schema, Vega-Lite, and URI libraries before understanding the main argument. This buries the key message.
+
+TEXT: "# Step 3: Code Gen with Vega-Lite" showing the RectConfig structure
+ISSUE: While this *does* show why subtyping would be useful (avoiding `.some (.inl .left)` syntax), it comes very late and the connection isn't made explicit enough. The reader might miss that subtyping solves this problem.
+
+TEXT: "### Proving anything about JSON" through "Custom recursors like this..."
+ISSUE: For convincing someone subtyping is "not too difficult," detailed explanations of well-founded recursion, termination proofs, and custom recursors make it appear extremely difficult. This undermines the intended function.
+
+TEXT: "### List equality was a pain"
+ISSUE: Describing painful technical challenges contradicts the claim that subtyping is "not too difficult."
+
+TEXT: "Nested inductives are massaged much more to make them appear normal... The kernel will error with `nested inductive datatypes parameters cannot contain local variables`, which remains mildly mysterious to me."
+ISSUE: Admitting confusion about kernel errors and describing types as "massaged" makes the implementation sound arcane and difficult, not approachable.
+
+TEXT: "I spent a day reading Lean's reference manual on 'well-founded recursion' and tried simplifying termination goals..."
+ISSUE: Mentioning spending a full day wrestling with recursion proofs contradicts "not too difficult."
+
+TEXT: "## A small aside: subtyping is a cool idea!"
+ISSUE: This section is positioned as a throwaway "aside" when it should be central to the argument. It's also extremely brief compared to the technical implementations, suggesting the author values the technical details more than the conceptual benefits.
+
+TEXT: The ending section "# Back to plotting" through the end
+ISSUE: The post concludes by saying "I'm not so gung-ho about translating JSON Schema into my JsonType, so for now, I'll just do runtime checking." This suggests the author themselves isn't convinced subtyping is worth the effort, directly undermining the intended persuasive function.
+
+TEXT: Code blocks showing `DecideSubtype`, `ObjectFields`, and complex proofs
+ISSUE: While these demonstrate capability, they don't make subtyping look "not too difficult" to someone with only "a bit of Lean" experience. The technical sophistication required is intimidating rather than inviting.
+
+**Overall**: The post reads as a technical journey/war story rather than a persuasive piece. To convince the target reader, it should: (1) introduce the subtyping thesis early, (2) show concrete before/after comparisons of code with and without subtyping, (3) minimize or remove irrelevant implementation details, and (4) emphasize the conceptual simplicity rather than implementation challenges.
