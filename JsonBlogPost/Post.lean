@@ -6,7 +6,6 @@ import JsonSchema.Validation
 open Verso Genre Blog
 open Verso.Doc
 
-#exit
 section
 open Verso Doc Elab ArgParse
 open Lean
@@ -57,35 +56,49 @@ set_option pp.rawOnError true
 -- I removed some definitions, and now this is necessary...
 set_option maxHeartbeats 800000
 
-#doc (Page) "Type-safe JSON in Lean" =>
+#doc (Page) "Type-safe JSON in Lean: json-schema-lean or subtyping" =>
 
-To have type-safe JSON, you can create specialized data types, or you can validate during runtime.
+To have type-safe JSON in most languages, you can create specialized data types or you can validate during runtime.
 I wanted to explore using [Vega-Lite](https://vega.github.io/vega-lite/) for plotting in Lean, and
-I wanted to have some sort of check. So in one giant PR, I mostly finished the [json-schema-lean](https://github.com/CAIMEOX/json-schema-lean/)
-library, since Vega-Lite has a [schema](https://vega.github.io/schema/vega-lite/v6.4.1.json). Then I decided to
-try generating code from JSON Schema. Along the way, I had to make a URI library
-[`lean-uri`](https://github.com/josephmckinsey/lean-uri). Skip to {ref plot}[the end] to see usage.
+I wanted to have some safety check. VegaLite has a [JSON schema](https://vega.github.io/schema/vega-lite/v6.4.1.json).
+One giant PR later, [`json-schema-lean`](https://github.com/CAIMEOX/json-schema-lean/) can
+now validate plotting configs. At present, the library hasn't been battle-tested, but it supports Draft 7 JSON Schema with the
+exception of file/http remote references. Along the way, I had to make a URI library
+[`lean-uri`](https://github.com/josephmckinsey/lean-uri). If you only want to see it in action,
+skip to {ref plot}[the end].
 
-I became dissatisfied with how JSON Schema code generation produces unergonomic types in almost every language,
-no matter what I try. Meanwhile, most languages don't track runtime validation. If you know that a JSON passed validation, then
-the compiler can't guarantee any properties of your data. But in Lean, we can use the validation as an assumption
-in a theorem. Then we can prove that fields are populated, or go backwards and prove that validation would check if we
-ran it. This idea wouldn't leave me, so I also tried to implement that:
-[`json-subtyping`](https://github.com/josephmckinsey/json-subtyping).
+Since creating specialized data types is often more convenient, after getting the basics of validation,
+I tried my hand at turning schemas into Lean types. But I became dissatisfied with how JSON Schema code generation
+produces unergonomic types, no matter what I try. This mismatch pains me in several languages.
+Meanwhile, most languages don't reason about runtime validation. If you know that a JSON passed validation, then the compiler
+can't guarantee any properties of your data. But in Lean, we can use the validation as an assumption in a theorem.
+Then we can prove that fields are populated, or go backwards and prove that validation would check if we ran it.
+We parse by validating. This idea wouldn't leave me, so I tried to implement it and came up with [`json-subtyping`](https://github.com/josephmckinsey/json-subtyping).
 
-Despite dependent typing being really great since you can prove theorems, it's not ideal for
-things like plotting libraries. When every union is implicitly tagged with a discrimintaor,
-as in Lean, you have to be more aware during union construction. Subtyping helps you avoid that.
-Additionally, you don't need to type every object if you have gradual typing.
+When attaching these properties to our data in Lean, it's convenient to emulate a kind of subtyping.
+Although the standard functional types have many nice properties for theorem proving, plotting becomes
+excessively verbose. When every union is implicitly tagged with a discriminator,
+as in Lean, extensions and escape hatches for plots complicate every union construction. Subtyping is one approach
+to minimizing the difficulty when you extend types. Furthermore, if you use some gradual typing,
+you can move fast when you don't care, like for some one-off plots.
 
-I have particular hope for using dependent typing to provide guarantees for dataframe libraries, SQL results, and
-tensor manipulation. Those are places where traditional type systems have dropped the ball, but we could track
-the properties with a custom schema. Using dependent types can invite "dependent type hell", but I had luck
-with just attaching the validation check as a `Prop`, although I may pay for my sins in the future.
+I also have hope for similar schema-based subtyping to provide guarantees for dataframe libraries, SQL results, and
+tensor manipulation. Those are places where traditional type systems have dropped the ball, where even validation
+frameworks like [Pandera](https://pandera.readthedocs.io/en/stable/index.html) for `pandas` have high costs
+and limited utility. Using dependent types can invite "dependent type hell", but I had luck
+with just attaching the validation check as a `Prop`. By avoiding ["indexed families"](https://leanprover.github.io/functional_programming_in_lean/dependent-types/indexed-families.html)
+in favor of ["the universe pattern"](https://leanprover.github.io/functional_programming_in_lean/dependent-types/universe-pattern.html),
+we also can more easily vary the underlying implementation.
+
+By sharing an excessive level of detail below, I aim to encourage more people to work on libraries like
+`json-schema-lean`--Lean needs more libraries in my opinion. I also want to explore the details
+around code generation options in Lean. Finally, I want to show that subtyping is a viable pattern for type
+safety in dependent type languages. But at the end, there are still several unexplored options for better
+plotting in Lean I'll mention.
 
 # Step 1: JSON Schema in Lean
 
-Luckily there was already a [`json-schema-lean`](https://github.com/CAIMEOX/json-schema-lean/) library--a GSoC 2024 project.
+Starting out, I was lucky there was already a [`json-schema-lean`](https://github.com/CAIMEOX/json-schema-lean/) library--a GSoC 2024 project.
 The main branch was incomplete, but there was nice [testing infrastructure](https://github.com/bowtie-json-schema/bowtie).
 I figured it wouldn't be _too_ difficult to complete.
 
@@ -98,7 +111,7 @@ code is substandard but more or less workable depending on the language and appl
 
 I have primarily used JSON Schema Draft 7, which has a [relatively short spec](https://json-schema.org/draft-07/draft-handrews-json-schema-01).
 With it in hand, I implemented most of the features within a week or two, using a lot of Claude Code for most features,
-especially once it got really repetitive. I discovered that there were a lot of features I never use nor want to:
+especially once it got really repetitive. I discovered that there were a lot of features of Draft 7 I never use nor want to:
 
 - You can pattern match regexes in strings.
 - You can have loops in your schema references, which you have to guard against.
@@ -110,12 +123,12 @@ since schemas have unusual options like just `true` or nested `if-then-else` sch
 Bowtie's comprehensive tests saved me a bunch. There were quite a few parts around references where the spec confused me.
 Lean has a few regex libraries to choose from like [`Regex`](https://github.com/bergmannjg/regex). That also saved me a
 lot of trouble since regex is not an isolated feature; it can be used to select schemas for properties. Sadly there was
-another missing element leading to yet another side-quest.
+another missing element leading to yet another side-quest in the form of URI resolution.
 
 ## Step 1.1: URIs
 
 [*Uniform Resource Identifiers*](https://en.wikipedia.org/wiki/Uniform_Resource_Identifier) are special strings that serve
-as semantic IDs. They don't quite provide a unique value, but they often tell you something about some digital resource.
+as semantic IDs. They don't guarantee stability or uniqueness, but they often tell you something about some digital resource.
 [URLs](https://en.wikipedia.org/wiki/URL) are a subtype of URIs. A URL is a URI plus the protocol to retrieve the URL.
 The [URI spec (RFC 3986)](https://www.rfc-editor.org/rfc/rfc3986) breaks URI into `URI = scheme ":" ["//" authority] path ["?" query] ["#" fragment]`,
 and it defines the percent-encoding and decoding (like why Google replaces spaces with `%20` in the results URL).
@@ -124,7 +137,7 @@ to access "nearby" resources.
 
 So what does this have to do with JSON Schema? Well, `$id`s and `$ref`s follow the rules of URIs. You can use different
 protocols, you can use relative paths, and fragments point to definitions within files. Since Lean didn't have
-a URI library, I implemented one. Since testing is not as well centralized, I mainly picked examples from the RFC and looked at
+a URI library, I implemented one. Since testing is not as well centralized compared to JSON Schema, I mainly picked examples from the RFC and looked at
 Haskell equivalents. For implementation, I started with hoping Claude could read and execute the spec, then rewriting it when it got ugly.
 Since I hold parser combinators close to heart, I started with some hand-written [`Std.Internal.Parsec.String`](https://leanprover-community.github.io/mathlib4_docs/Std/Internal/Parsec/String.html),
 and tried to work within that monad, making the code more uniform.
@@ -134,7 +147,7 @@ and tried to work within that monad, making the code more uniform.
 Since URIs (unlike URLs) didn't seem to have a nice testing framework already, I really wanted to count on my own testing.
 Lean has a way to hook up an executable to [`lake test`](https://github.com/leanprover-community/mathlib4/wiki/Setting-up-linting-and-testing-for-your-Lean-project),
 and that attracted me too. I didn't really like [LSpec](https://github.com/argumentcomputer/LSpec), which appears
-to be the only testing library in Lean. My conclusion: I decided to write a little testing library. I decided to put it in a
+to be the only testing library in Lean. My conclusion: time to write a little testing library. I decided to put it in a
 `Test` monad based on IO, where you can log tests to monad state, group tests, etc.
 
 ```leanInit testing
@@ -160,23 +173,23 @@ tests is a blessing and a curse. There are too many features I want in a proper 
 forever.
 
 Once I had the basic URI interface, it was mainly a matter of repeatedly testing the `$ref` and `$id` cases until I got tests
-passing (except for a few).
+passing.
 
 ### A slight detour: Json Pointer Fragments
 
-For refering to definitions within files, say `#/definitions/A/`, any JSON "pointer fragment" can be used.
+For referring to definitions within files, say `#/definitions/A/`, any JSON "pointer fragment" can be used.
 [RFC 6901](https://www.rfc-editor.org/rfc/rfc6901) describes the format for JSON pointer fragments trailing on a URI
-anchors.
+anchor.
 
 ## What doesn't work?
 
 Several Bowtie tests require you to read referenced JSON schemas on the fly from a URL. Lean does not have a good URL library,
 so I just decided to give up on that part.
 
-# Step 2: Json Schema Code Gen
+# {label codegen}[Step 2: Json Schema Code Gen]
 
 Now that I parse and understand all the features of JSON schema, I decided to try generating Lean structs from JSON schema.
-My strategy plodded along trying to parse in the `Except String Std.Format` monad: first simple
+My strategy plodded along trying to parse `Schema` into the `Except String Std.Format` monad: first try to build simple
 abbreviations, then `structure`s, etc. I considered macros, but inserting comments eluded me. I settled on
 [`Std.Format`s](https://lean-lang.org/doc/api/Init/Data/Format/Basic.html#Std.Format), Lean's
 way to handle indentation, precedence, etc. The API was far nicer than I deserved, even though it is string
@@ -184,8 +197,8 @@ manipulation.
 
 Eventually, I needed more code generation context, recursion, and custom toJson/fromJson instances. I settled
 on writing all the parsers into a `SchemaGen TypeDefinition` monad where `SchemaGen` had context and error handling
-while `TypeDefinition` held all the parsed definitions. Using a custom monad name here is beyond useful, and I
-understand now why so many libraries walk the life of a custom named monad transformer.
+while `TypeDefinition` held all the parsed definitions. Using a custom monad name here is extremely useful, and I
+understand now why so many libraries walk the life of a custom named [monad transformer](https://leanprover.github.io/functional_programming_in_lean/monad-transformers.html).
 
 ```lean testing
 /-- A complete type definition including the type declaration and optional JSON instances -/
@@ -254,11 +267,11 @@ So Claude could do it, taking away some of my fun ☹️.
 Aside from that, there are so many different special cases, abbreviations, inductives, etc. The tension
 between inductives and abbreviations was quite annoying.
 
-# Step 3: Code Gen with Vega-Lite
+# {label vegalitecodegen}[Step 3: Code Gen with Vega-Lite]
 
 How did code gen work with Vega-Lite?
 
-* Mutual induction is still broken, oops?
+* Mutual inductive types don't generate right, oops?
 * It would take several minutes to compile, and it's >15,000 lines.
 * All the code is too ugly to use.
 
@@ -285,18 +298,28 @@ Now instead of `{align: "left", ...}`, we have to use `.some (.inl .left)`. Spec
 right enum name can be really annoying. The long list of fields makes it difficult to remember which one if any is required.
 There are definitely ways to simplify this, but doing it automatically might be a bit much.
 
-# Back to the drawing board
+# {label subtyping}[Back to the drawing board]
 
 You know what would be really convenient? If you could determine if the JSON schema validation passed during compile time.
 If the entire JSON is known at compile time, we can prove it using `by native_decide` to
 run the computation `validate schema json` and verify it equals `true`. What if a theorem about your JSON's structure proved `validate schema json` would pass? That
 sounds great, but proving the most useful properties requires `validate` _terminates_--not an easy proof at all.
-If we use a more restrictive language, we could more easily prove validation _ahead_ of time.
+If we use a more restrictive schema language, we could more easily prove validation _ahead_ of time.
 
 I put this idea away for a week or so. After using [TypeScript](https://www.typescriptlang.org/) a bit professionally, I figured
 that we could crib TypeScript's homework and use a fragment of it to check JSON. One day
 I spent a few hours writing up a [blueprint](https://github.com/josephmckinsey/json-subtyping/blob/main/blueprint/plan.pdf)
 in [Typst](https://typst.app/) (an up-and-coming LaTeX alternative). This was also more fun than improving JSON Schema validation.
+
+I also considered building the schema checking right into the JSON constructors as an inductive ["indexed family"](https://leanprover.github.io/functional_programming_in_lean/dependent-types/typed-queries.html),
+but using a `schema.check` function let me use the existing JSON data structure as a base.
+This brought me to a ["universe" design pattern](https://leanprover.github.io/functional_programming_in_lean/dependent-types/universe-pattern.html),
+which feels like a breath of fresh air compared to carefully encoding properties inductively.
+Overall, I believe that decoupling your evidence from your data is by default the correct approach,
+so that you only depend on a minimal amount of structure for your data. For example,
+we may want to one day switch to a more optimized tree format, which is easier the fewer
+propositions are bundled in it. We will use a few indexed families later for specific proofs
+in object construction and subtyping, but it is restricted to within those procedures.
 
 ## TypeScript
 
@@ -308,7 +331,7 @@ the control flow graph connecting locations. TypeScript does not try much to be 
 ## Blueprint
 
 I've never taken any course on type theory, so I probably did not use proof tree rules correctly, but
-I wrote a bunch of them in the blueprint anyways. I found it helpful especially for subtyping objects
+I wrote a bunch of them in the blueprint anyway. I found it helpful especially for subtyping objects
 correctly.
 
 ::::blob blueprintImage
@@ -324,11 +347,11 @@ which is used for the language server among other applications. Since the JSON t
 in types like Array and maps, Lean identifies it as a ["nested inductive type"](https://lean-lang.org/doc/reference/latest/The-Type-System/Inductive-Types/#nested-inductive-types).
 
 Nested inductives are massaged much more to make them appear normal. They are reorganized
-as an ordinary inductive, and then new definitions are uesd to create the appearance of
+as an ordinary inductive, and then new definitions are used to create the appearance of
 the original nested inductive. The default induction rules are a real pain to use,
 since they include the induction rules for Arrays and maps. Worse, you cannot include
 dependent terms in inductive data types. The kernel will error with `nested inductive datatypes parameters
-cannot contain local variables`, which remains mildly mysterious to me.
+cannot contain local variables`, which retains some mystery to me.
 
 ### `Std.TreeMap.Raw`
 
@@ -338,7 +361,7 @@ a proof that the tree is properly constructed. Without that "well-formed" predic
 operations like insertion and lookup have fewer guarantees, but its inclusion does
 not play well with the nested inductive. So instead we have to use [`Std.TreeMap.Raw`](https://leanprover-community.github.io/mathlib4_docs/Std/Data/TreeMap/Raw/Basic.html#Std.TreeMap.Raw),
 which has no proof the data is "well-formed". The usual solution is to add the well-formedness _again_
-in the inductive, but Json lacks this.
+in the inductive, but the Json type doesn't have that property.
 
 I carefully tried to work around potentially ill-formed trees by asserting properties about
 [`.get?`](https://leanprover-community.github.io/mathlib4_docs/Std/Data/TreeMap/Raw/Basic.html#Std.TreeMap.Raw.get?)
@@ -352,21 +375,22 @@ As long as you can prove termination of functions on JSON, you can write your ow
 by proving induction terminates.
 
 I spent a day reading [Lean's reference manual on "well-founded recursion"](https://lean-lang.org/doc/reference/4.26.0-rc2/Definitions/Recursive-Definitions/#well-founded-recursion)
-and tried simplifying termination goals on a `Json.beq` implementation. As opposed
+and tried simplifying termination goals on a `Json.beq` implementation. The reference manual lays
+out how `termination_by` and `decreasing_by` let you access these normally hidden goals. As opposed
 to trying to use induction, we write a recursive function where we only call
 on "smaller" values somehow. You can use any ["well-founded" relation](https://en.wikipedia.org/wiki/Well-founded_relation) you want, which
 guarantees that eventually an execution will reduce the data to nothing and no more
 recursive calls are possible.
 
-for instance, when we iterate `.obj map : Lean.Json` and recursively call on the values,
-we want to know that `(k, v) ∈ map` implies the size of the size of `v` is smaller than map, which is smaller than `.obj map`.
+For instance, when we iterate `.obj map : Lean.Json` and recursively call on the values,
+we want to know that `(k, v) ∈ map` implies the size of `v` is smaller than map, which is smaller than `.obj map`.
 Lean provides a `sizeOf` definition automatically for most types where this property is practically guaranteed.
 During automatic termination checking, Lean attaches the membership proofs to elements of lists with
 [`List.attach (l : List α) : List { x // x ∈ l }`](https://leanprover-community.github.io/mathlib4_docs/Init/Data/List/Attach.html#List.attach).
 
 We can then apply [`List.sizeOf_lt_of_mem {a : α} {as : List α} (h : a ∈ as) : sizeOf a < sizeOf as`](https://leanprover-community.github.io/mathlib4_docs/Init/Data/List/BasicAux.html#List.sizeOf_lt_of_mem).
 
-Although this "attach" framework works well (and automatically) for lists and arrays, the types don't work as nicely for `Std.TreeMap`.
+Although this "attach" framework works well (and automatically) for lists and arrays, we lack those theorems for `Std.TreeMap`.
 After combing through `Std.TreeMap`'s source code with Claude Code, I learned about [`Std.DTreeMap.Internal.Impl.toListModel`](https://leanprover-community.github.io/mathlib4_docs/Std/Data/DTreeMap/Internal/Def.html#Std.DTreeMap.Internal.Impl.toListModel).
 This function inefficiently flattens into a list, but the reasoning is far simpler. It's also proved equivalent
 to `.toList`, which is more efficient. Claude Code was essentially able to one-shot the `sizeOf` lemmas:
@@ -397,9 +421,10 @@ theorem TreeMap.Raw.sizeOf_lt_of_mem {α β : Type} {cmp : α → α → Orderin
   omega
 ```
 
-So my strategy was to use `.toList.attach` which would attach the membership lemmas, which I could then use with `.sizeOf_lt_of_mem`
-to prove that the size of recursive arguments decreases. Compared to the verbosity of
-ordinary induction here, this is much briefer. Now we can implement better JSON induction methods:
+So my strategy was to use `.toList.attach` to attach the membership proposition, and then
+extract the size lemma with `.sizeOf_lt_of_mem` when proving the size of recursive arguments decreases.
+Compared to the verbosity of ordinary induction here, this is much briefer. Now we can implement better
+JSON induction methods:
 
 ```lean testing
 set_option linter.unusedVariables false in
@@ -439,8 +464,8 @@ split up recursive definitions while still proving termination.
 ### List equality was a pain
 
 Lawful equality already exists for `List α`, but it expects an existing instance of equality for `α`.
-For a particular subtyping proof, I needed a `ReflBEq Json` (`∀x : Json, x == x`), I hoped to use `ReflBEq (List α)`.
-At the time, I ran out of patience and cleverness and could not figure out the recursion for `ReflBEq (List α)`,
+For a particular subtyping proof, I needed a `ReflBEq Json` (`∀x : Json, x == x`); I hoped to use `ReflBEq (List α)`.
+At the time, I ran out of patience and cleverness trying to prove a termination goal,
 so I reimplemented the lemma instead. Relatedly, writing inline definitions
 in a typeclass instance makes it strangely difficult to unfold those definitions.
 
@@ -462,7 +487,10 @@ inductive DecideSubtype (t1 t2 : JsonType) where
 
 This allowed me to reuse the convoluted logic of the subtype checking for the proof plumbing. Proving that subtyping
 worked separately involved so much more casework; it was so much easier to piggyback off the existing casework. Truly, dependent
-types are wonderful!
+types are wonderful! Especially as long as you remember: ["Programs that use these types will find themselves
+forced to mirror the algorithm used in the type-level function so that their structure matches the
+pattern-matching and recursive behavior of the type."](https://leanprover.github.io/functional_programming_in_lean/dependent-types/typed-queries.html#column-pointers)
+This is the blessing and curse of dependent types.
 
 There was a lot of rewriting and sublemmas for all the different `JsonType` constructors, especially for object subtyping,
 but I was mainly correcting the plan, ensuring that required and optional types behaved correctly, and trying a bunch
@@ -521,7 +549,7 @@ if ("age" in person) {
 This is really helpful, but it is also more fraught with difficulty than it appears. Since objects may have
 _extra_ fields in JSON, it is possible to have `person = {dob: ..., age: 10}`. Now TypeScript mistakenly
 believes that `person.id` is defined. When I learned about this, I decided that I should stop looking at the TypeScript
-source code, and also I am going to check field properties as my proof of concept.
+source code. For a proof of concept, I only discriminate using a known property's values.
 
 The blog post
 ["Flow Nodes: How Type Inference Is Implemented"](https://effectivetypescript.com/2024/03/24/flownodes/)
@@ -550,19 +578,13 @@ theorem JsonType.filterUnion_correctness
     (t.filterUnion f).check x = true := by sorry
 ```
 
-## A small aside: subtyping is a cool idea!
-
-Subtyping is far more common out in the "real-world". In the programming language Julia, subtyping is used for multiple dispatch,
-for compiler monomorphization, correctness, units, etc. For plotting and array manipulation, it works well.
-Even object inheritance (a form of subtyping in my opinion) has its place. Using gradual subtyping is a natural fit for extending code while maintaining compatibility.
-I'm especially optimistic on the potential for domain-specific typing for dataframes. Something to look into.
-
 # {label plot}[Back to plotting]
 
 I still want to plot something, so how will I do that? I'm not so gung-ho about translating JSON Schema into my JsonType,
-so for now, I'll just do runtime checking with the JSON Schema. I don't _really_ need to have it working ahead of time.
+so for now, I'll just do runtime checking with the JSON Schema. Since it's just a plot after all,
+for most of my own purposes, I don't _really_ need to have any guarantee ahead of time.
 
-In this case, the approach is relatively simple: we load in the Vega-Lite schema with `include_str`, then we can parse
+Since there is a single file for the schema, the approach is relatively simple: we load in the Vega-Lite schema with `include_str`, then we can parse
 it and use it to validate.
 
 ```
@@ -614,7 +636,7 @@ We can then embed the JSON into an HTML tag and display it as needed:
 
 It should then be relatively simple to make this a [Lean widget](https://lean-lang.org/examples/1900-1-1-widgets/).
 However, the syntax for constructing JSON in Lean is very unergonomic, since we can't combine string formatting
-with JSON syntax easily. Creating custom string syntax for JavaScript in general might be easier
+with JSON syntax easily. Creating custom string syntax for JavaScript in general might be more usable
 for using JavaScript libraries in widgets.
 
 ## Other potential improvements
