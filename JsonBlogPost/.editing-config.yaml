@@ -5,14 +5,14 @@ profiles:
     output_format: streaming
 
   cs-reader:
-    reader: "a CS major familiar with Json and a bit of Lean"
+    reader: "a CS major familiar with Json and some Lean"
     checks: [reader, clarity, value]
     model: openrouter/anthropic/claude-sonnet-4.5
     output_format: streaming
 
   subtyping-is-useful-check:
     checks: [function]
-    reader: "a CS major familiar with Json and a bit of Lean that subtyping is a promising direction"
+    reader: "a CS major familiar with Json and some Lean that subtyping is a promising direction"
     function: "convince"
     model: openrouter/anthropic/claude-sonnet-4.5
     output_format: streaming

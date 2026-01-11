@@ -53,9 +53,6 @@ end
 
 set_option pp.rawOnError true
 
--- I removed some definitions, and now this is necessary...
-set_option maxHeartbeats 800000
-
 #doc (Page) "Type-safe JSON in Lean: json-schema-lean or subtyping" =>
 
 To have type-safe JSON in most languages, you can create specialized data types or you can validate during runtime.
@@ -73,14 +70,14 @@ produces unergonomic types, no matter what I try. This mismatch pains me in seve
 Meanwhile, most languages don't reason about runtime validation. If you know that a JSON passed validation, then the compiler
 can't guarantee any properties of your data. But in Lean, we can use the validation as an assumption in a theorem.
 Then we can prove that fields are populated, or go backwards and prove that validation would check if we ran it.
-We parse by validating. This idea wouldn't leave me, so I tried to implement it and came up with [`json-subtyping`](https://github.com/josephmckinsey/json-subtyping).
+This idea wouldn't leave me, so I tried to implement it and came up with [`json-subtyping`](https://github.com/josephmckinsey/json-subtyping).
 
-When attaching these properties to our data in Lean, it's convenient to emulate a kind of subtyping.
-Although the standard functional types have many nice properties for theorem proving, plotting becomes
+When attaching properties to our JSON data in Lean, it's convenient to emulate a kind of subtyping.
+Although the standard sum and product types have many nice properties for theorem proving, plotting becomes
 excessively verbose. When every union is implicitly tagged with a discriminator,
 as in Lean, extensions and escape hatches for plots complicate every union construction. Subtyping is one approach
 to minimizing the difficulty when you extend types. Furthermore, if you use some gradual typing,
-you can move fast when you don't care, like for some one-off plots.
+you can move fast when you don't need generalization, like for some one-off plots.
 
 I also have hope for similar schema-based subtyping to provide guarantees for dataframe libraries, SQL results, and
 tensor manipulation. Those are places where traditional type systems have dropped the ball, where even validation
@@ -117,7 +114,7 @@ especially once it got really repetitive. I discovered that there were a lot of 
 - You can have loops in your schema references, which you have to guard against.
 - There are properties, pattern properties, additional properties, etc. These all interact with each other.
 
-The schema turned into a [big mutual inductive type](https://github.com/josephmckinsey/json-schema-lean/blob/27846b7410a8fd0955ce09b8c36b3904eb895a0b/JsonSchema/Schema.lean#L50),
+The schema turned into a [big mutually inductive type](https://github.com/josephmckinsey/json-schema-lean/blob/27846b7410a8fd0955ce09b8c36b3904eb895a0b/JsonSchema/Schema.lean#L50),
 since schemas have unusual options like just `true` or nested `if-then-else` schemas.
 
 Bowtie's comprehensive tests saved me a bunch. There were quite a few parts around references where the spec confused me.
@@ -132,13 +129,13 @@ as semantic IDs. They don't guarantee stability or uniqueness, but they often te
 [URLs](https://en.wikipedia.org/wiki/URL) are a subtype of URIs. A URL is a URI plus the protocol to retrieve the URL.
 The [URI spec (RFC 3986)](https://www.rfc-editor.org/rfc/rfc3986) breaks URI into `URI = scheme ":" ["//" authority] path ["?" query] ["#" fragment]`,
 and it defines the percent-encoding and decoding (like why Google replaces spaces with `%20` in the results URL).
-Different schemes can then have special rules on top like URL domains or base64-encoding. There's also *relative URIs*
+Different schemes can then have special rules on top like URL domain resolution or base64-encoding. There's also *relative URIs*
 to access "nearby" resources.
 
 So what does this have to do with JSON Schema? Well, `$id`s and `$ref`s follow the rules of URIs. You can use different
 protocols, you can use relative paths, and fragments point to definitions within files. Since Lean didn't have
 a URI library, I implemented one. Since testing is not as well centralized compared to JSON Schema, I mainly picked examples from the RFC and looked at
-Haskell equivalents. For implementation, I started with hoping Claude could read and execute the spec, then rewriting it when it got ugly.
+Haskell equivalents. For implementation, I started with hoping Claude could read and operationalize the spec, then rewriting it when it got ugly.
 Since I hold parser combinators close to heart, I started with some hand-written [`Std.Internal.Parsec.String`](https://leanprover-community.github.io/mathlib4_docs/Std/Internal/Parsec/String.html),
 and tried to work within that monad, making the code more uniform.
 
@@ -148,7 +145,7 @@ Since URIs (unlike URLs) didn't seem to have a nice testing framework already, I
 Lean has a way to hook up an executable to [`lake test`](https://github.com/leanprover-community/mathlib4/wiki/Setting-up-linting-and-testing-for-your-Lean-project),
 and that attracted me too. I didn't really like [LSpec](https://github.com/argumentcomputer/LSpec), which appears
 to be the only testing library in Lean. My conclusion: time to write a little testing library. I decided to put it in a
-`Test` monad based on IO, where you can log tests to monad state, group tests, etc.
+`Test` monad based on IO, where you can log passed, failed, and skipped tests to monad state, group tests, etc.
 
 ```leanInit testing
 ```
@@ -169,7 +166,7 @@ abbrev TestM := StateT TestState IO
 
 This worked fine for what I needed, and I reused the helpers for testing code gen on a branch of `json-schema-lean`.
 Some tiny features like filtering or whatever are simple. I doubt I'll use this long-term, since having IO in all your
-tests is a blessing and a curse. There are too many features I want in a proper testing library to use my hacky version
+tests is a blessing and a curse. There are too many features I want in a truly excellent testing library to use my hacky version
 forever.
 
 Once I had the basic URI interface, it was mainly a matter of repeatedly testing the `$ref` and `$id` cases until I got tests
@@ -177,7 +174,8 @@ passing.
 
 ### A slight detour: Json Pointer Fragments
 
-For referring to definitions within files, say `#/definitions/A/`, any JSON "pointer fragment" can be used.
+We can refer to definitions within files as well with JSON "pointer fragments". The pointer fragment `#/definitions/A/`
+refers to `obj["definitions"]["A"]`, and similar notation is available for indexing lists, etc.
 [RFC 6901](https://www.rfc-editor.org/rfc/rfc6901) describes the format for JSON pointer fragments trailing on a URI
 anchor.
 
@@ -189,7 +187,7 @@ so I just decided to give up on that part.
 # {label codegen}[Step 2: Json Schema Code Gen]
 
 Now that I parse and understand all the features of JSON schema, I decided to try generating Lean structs from JSON schema.
-My strategy plodded along trying to parse `Schema` into the `Except String Std.Format` monad: first try to build simple
+My strategy plodded along, trying to parse `Schema` into the `Except String Std.Format` monad: first try to build simple
 abbreviations, then `structure`s, etc. I considered macros, but inserting comments eluded me. I settled on
 [`Std.Format`s](https://lean-lang.org/doc/api/Init/Data/Format/Basic.html#Std.Format), Lean's
 way to handle indentation, precedence, etc. The API was far nicer than I deserved, even though it is string
@@ -198,7 +196,7 @@ manipulation.
 Eventually, I needed more code generation context, recursion, and custom toJson/fromJson instances. I settled
 on writing all the parsers into a `SchemaGen TypeDefinition` monad where `SchemaGen` had context and error handling
 while `TypeDefinition` held all the parsed definitions. Using a custom monad name here is extremely useful, and I
-understand now why so many libraries walk the life of a custom named [monad transformer](https://leanprover.github.io/functional_programming_in_lean/monad-transformers.html).
+understand now why so many libraries live in a custom named [monad transformer](https://leanprover.github.io/functional_programming_in_lean/monad-transformers.html).
 
 ```lean testing
 /-- A complete type definition including the type declaration and optional JSON instances -/
@@ -265,7 +263,7 @@ and [Lean.SCC](https://github.com/leanprover/lean4/blob/9d4ad1273f6cea397c3066c2
 So Claude could do it, taking away some of my fun ☹️.
 
 Aside from that, there are so many different special cases, abbreviations, inductives, etc. The tension
-between inductives and abbreviations was quite annoying.
+between verbose inductives and the unintended consequences of abbreviations was quite annoying.
 
 # {label vegalitecodegen}[Step 3: Code Gen with Vega-Lite]
 
@@ -325,7 +323,7 @@ in object construction and subtyping, but it is restricted to within those proce
 
 JavaScript has 6 types: `null, string, number, boolean, object, undefined`. Many "types" in JavaScript are
 really just special objects like "functions". TypeScript lets you gradually define types to assign properties of
-variables at locations, and then it will check properties "x has property 'id'" at compile-time by inspecting
+variables at code locations, and then it will check properties "x has property 'id'" at compile-time by inspecting
 the control flow graph connecting locations. TypeScript does not try much to be sound.
 
 ## Blueprint
@@ -361,7 +359,7 @@ a proof that the tree is properly constructed. Without that "well-formed" predic
 operations like insertion and lookup have fewer guarantees, but its inclusion does
 not play well with the nested inductive. So instead we have to use [`Std.TreeMap.Raw`](https://leanprover-community.github.io/mathlib4_docs/Std/Data/TreeMap/Raw/Basic.html#Std.TreeMap.Raw),
 which has no proof the data is "well-formed". The usual solution is to add the well-formedness _again_
-in the inductive, but the Json type doesn't have that property.
+in the inductive, but the Json type doesn't attach the well-formedness anywhere.
 
 I carefully tried to work around potentially ill-formed trees by asserting properties about
 [`.get?`](https://leanprover-community.github.io/mathlib4_docs/Std/Data/TreeMap/Raw/Basic.html#Std.TreeMap.Raw.get?)
@@ -375,11 +373,11 @@ As long as you can prove termination of functions on JSON, you can write your ow
 by proving induction terminates.
 
 I spent a day reading [Lean's reference manual on "well-founded recursion"](https://lean-lang.org/doc/reference/4.26.0-rc2/Definitions/Recursive-Definitions/#well-founded-recursion)
-and tried simplifying termination goals on a `Json.beq` implementation. The reference manual lays
-out how `termination_by` and `decreasing_by` let you access these normally hidden goals. As opposed
-to trying to use induction, we write a recursive function where we only call
-on "smaller" values somehow. You can use any ["well-founded" relation](https://en.wikipedia.org/wiki/Well-founded_relation) you want, which
-guarantees that eventually an execution will reduce the data to nothing and no more
+and tried simplifying termination goals that appear in a `Json.beq` implementation implicitly using such
+recurion. The reference manual lays out how `termination_by` and `decreasing_by` let you access
+these normally hidden goals. As opposed to trying to use induction, we write a recursive function where
+we only call on "smaller" values somehow. You can use any ["well-founded" relation](https://en.wikipedia.org/wiki/Well-founded_relation)
+you want, which guarantees that eventually an execution will reduce the data to nothing and no more
 recursive calls are possible.
 
 For instance, when we iterate `.obj map : Lean.Json` and recursively call on the values,
@@ -421,7 +419,7 @@ theorem TreeMap.Raw.sizeOf_lt_of_mem {α β : Type} {cmp : α → α → Orderin
   omega
 ```
 
-So my strategy was to use `.toList.attach` to attach the membership proposition, and then
+So my strategy was to use `.toList.attach` to attach the membership proof, and then
 extract the size lemma with `.sizeOf_lt_of_mem` when proving the size of recursive arguments decreases.
 Compared to the verbosity of ordinary induction here, this is much briefer. Now we can implement better
 JSON induction methods:
@@ -457,7 +455,7 @@ decreasing_by
   exact vMem
 ```
 
-Custom recursors like this let you split up recursive definitions really easily as long as you are able
+Custom "recursors" like this let you split up recursive definitions really easily as long as you are able
 to take and apply hypotheses like `j ∈ a`. As long as you carry around membership information, you can
 split up recursive definitions while still proving termination.
 
@@ -494,8 +492,7 @@ This is the blessing and curse of dependent types.
 
 There was a lot of rewriting and sublemmas for all the different `JsonType` constructors, especially for object subtyping,
 but I was mainly correcting the plan, ensuring that required and optional types behaved correctly, and trying a bunch
-of examples. I won't go any further into the proofs for the strategies for object subtyping,
-since it granted me no more insight.
+of examples. Once I got a correct human proof, the Lean version held no surprises.
 
 ## Object Construction
 
@@ -566,8 +563,8 @@ def JsonType.canMatchPropertyStr (t : JsonType) (key : String) (str : String) : 
 If `x` has property `key` with value `str`, then I prove that `t.check x = true` implies `t.canMatchPropertyStr key str = true`.
 Similarly, if `x` does *not* have property `key` with value `str`, then I can prove `t.canMismatchPropertyStr key str = true`.
 
-If `t = t1 ||| t2 ||| t3 ||| t4`, then I can turn that into a list `[t1, t2, t3, t4]` for which at least one must check,
-now if `t.check x = true`, then I know some `ti.check x = true`, so `ti.canMatchPropertyStr key str`. The upshot
+If `t = t1 ||| t2 ||| t3 ||| t4`, then I can turn that into a list `[t1, t2, t3, t4]` for which at least one must check.
+Now if `t.check x = true`, then I know some `ti.check x = true`, so `ti.canMatchPropertyStr key str`. The upshot
 is that I can filter `[t1, t2, t3, t4]` for `canMatchPropertyStr`, and one of them will still match `x`.
 
 ```
