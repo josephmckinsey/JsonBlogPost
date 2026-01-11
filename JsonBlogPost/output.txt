@@ -1,144 +1,31 @@
-TEXT: "One giant PR later, [`json-schema-lean`](https://github.com/CAIMEOX/json-schema-lean/) can now validate plotting configs."
-ISSUE: "PR" (Pull Request) is used without explanation, though most CS majors would likely know this term from Git/GitHub experience.
+# Analysis for Lean user in a hurry evaluating `json-schema-lean`
 
-TEXT: "Starting out, I was lucky there was already a [`json-schema-lean`](https://github.com/CAIMEOX/json-schema-lean/) library--a GSoC 2024 project."
-ISSUE: "GSoC" is an unexplained acronym (Google Summer of Code). A reader with "some Lean" knowledge may not be familiar with Lean community programs.
+TEXT: "I also have hope for similar schema-based subtyping to provide guarantees for dataframe libraries, SQL results, and tensor manipulation..."
+ISSUE: For a user evaluating json-schema-lean for JSON validation, future hopes about unrelated applications (dataframes, SQL, tensors) wastes time and doesn't inform their decision.
 
-TEXT: "Using dependent types can invite 'dependent type hell', but I had luck with just attaching the validation check as a `Prop`. By avoiding ["indexed families"](https://leanprover.github.io/functional_programming_in_lean/dependent-types/indexed-families.html) in favor of ["the universe pattern"](https://leanprover.github.io/functional_programming_in_lean/dependent-types/universe-pattern.html), we also can more easily vary the underlying implementation."
-ISSUE: "dependent type hell" is introduced without explanation of what makes it "hell" - a reader with "some Lean" may not have encountered the practical difficulties being referenced.
+TEXT: "By sharing an excessive level of detail below, I aim to encourage more people to work on libraries like `json-schema-lean`..."
+ISSUE: This explicitly warns the reader they're about to encounter "excessive detail" - a user in a hurry should skip everything after this, but doesn't know what they'd miss. This undermines the text's ability to inform efficiently.
 
-TEXT: "I spent a day reading [Lean's reference manual on "well-founded recursion"](https://lean-lang.org/doc/reference/4.26.0-rc2/Definitions/Recursive-Definitions/#well-founded-recursion) and tried simplifying termination goals on a `Json.beq` implementation."
-ISSUE: The connection between "well-founded recursion" and "termination goals" assumes familiarity with Lean's termination checking mechanism that goes beyond "some Lean" knowledge.
+TEXT: "# Step 1: JSON Schema in Lean" through "## What doesn't work?" (entire section)
+ISSUE: Implementation details about how the library was built don't inform whether it's a decent choice for validation. A user in a hurry needs capabilities and limitations, not development history.
 
-TEXT: "Lean attaches the membership proofs to elements of lists with [`List.attach (l : List α) : List { x // x ∈ l }`](https://leanprover-community.github.io/mathlib4_docs/Init/Data/List/Attach.html#List.attach)."
-ISSUE: The "attach" pattern and its purpose (carrying membership proofs through recursive calls) is a somewhat advanced Lean technique that may not be familiar to someone with basic Lean knowledge.
+TEXT: "## Step 1.1: URIs" through "### A slight detour: Json Pointer Fragments" (entire section)
+ISSUE: Deep dive into URI implementation and RFC specs is irrelevant for evaluating whether to use json-schema-lean. This is development backstory, not user-facing information.
 
-TEXT: "This is the ideal use case for heterogeneous lists, a dependently typed list where each element can have its own type."
-ISSUE: While "heterogeneous lists" is defined here, the concept of why you'd need this over regular lists in a dependently typed context may not be clear to someone with limited dependent types experience.
+TEXT: "## Step 1.1.1: Testing" (entire section about building a testing library)
+ISSUE: How the developer tested the library during development doesn't inform a user whether the library is suitable for their JSON validation needs.
 
-TEXT: "I carefully put the key-values as type parameters, so I can access them at compile time more easily, then the actual typed JSON is included as a field."
-ISSUE: The distinction between "type parameters" and "fields" and why you'd choose one over the other for "compile time access" assumes deeper understanding of Lean's elaboration and type system than "some Lean" implies.
+TEXT: "# Step 2: Json Schema Code Gen" through end of section
+ISSUE: This entire section is about code generation from schemas - an approach the author attempted but doesn't recommend using. For evaluating json-schema-lean as a validation library, this is a distraction.
 
-TEXT: "Then we can prove that fields are populated, or go backwards and prove that validation would check if we ran it."
-ISSUE: "go backwards" is unclear—does this mean proving the converse (that if properties hold, validation would pass)?
+TEXT: "# Step 3: Code Gen with Vega-Lite" - showing failures with mutual inductives, compilation times, and ugly code
+ISSUE: This section demonstrates the library failing at a major use case. For a user in a hurry, this actively signals "don't use this for complex schemas" without clearly stating whether basic validation is still viable.
 
-TEXT: "Although the standard sum and product types have many nice properties for theorem proving, plotting becomes excessively verbose."
-ISSUE: "plotting" is ambiguous here—does it mean constructing plots, writing plotting code, or the act of creating visualizations?
+TEXT: "# Back to the drawing board" through "## Conclusion" (all sections on subtyping, TypeScript, blueprints, JSON difficulties, etc.)
+ISSUE: This massive section describes an alternative approach the author pursued instead of using json-schema-lean, suggesting dissatisfaction with the library itself. None of this informs whether json-schema-lean is good for validation - it suggests the opposite.
 
-TEXT: "When every union is implicitly tagged with a discriminator, as in Lean, extensions and escape hatches for plots complicate every union construction."
-ISSUE: The relationship between "extensions and escape hatches for plots" and "union construction" is unclear. How exactly do they complicate construction?
+TEXT: "Despite the potential, creating schemas for all of VegaLite might be more work than I'd be willing to go through for plotting, where I only need correctness for my data."
+ISSUE: The conclusion suggests even the author wouldn't use their recommended approach for the motivating use case, leaving a user confused about whether json-schema-lean is actually a decent choice.
 
-TEXT: "Furthermore, if you use some gradual typing, you can move fast when you don't care, like for some one-off plots."
-ISSUE: "when you don't care" is vague—care about what specifically? Type safety? Correctness?
-
-TEXT: "Different schemes can then have special rules on top like URL domains or base64-encoding."
-ISSUE: The examples are confusing—URL domains aren't "special rules" for URI schemes, and base64-encoding isn't a URI scheme feature.
-
-TEXT: "For implementation, I started with hoping Claude could read and execute the spec, then rewriting it when it got ugly."
-ISSUE: Claude (AI) cannot "execute" a specification—this likely means "implement" or "generate code from."
-
-TEXT: "I decided to put it in a `Test` monad based on IO, where you can log tests to monad state, group tests, etc."
-ISSUE: "log tests to monad state" is unclear—does this mean "record test results in the monad state"?
-
-TEXT: "Using a custom monad name here is extremely useful, and I understand now why so many libraries walk the life of a custom named monad transformer."
-ISSUE: "walk the life of" is very unclear and awkward. What does this phrase mean?
-
-TEXT: "My strategy plodded along trying to parse `Schema` into the `Except String Std.Format` monad"
-ISSUE: "plodded along trying to parse" is awkward phrasing—"plodded along" doesn't fit well with "trying to parse."
-
-TEXT: "I considered macros, but inserting comments eluded me."
-ISSUE: Unclear whether this means "I couldn't figure out how to insert comments when using macros."
-
-TEXT: "The API was far nicer than I deserved, even though it is string manipulation."
-ISSUE: "far nicer than I deserved" is unclear—does this mean "surprisingly good" or "better than expected"?
-
-TEXT: "The tension between inductives and abbreviations was quite annoying."
-ISSUE: What specific tension? The statement is too vague about what conflict exists between these approaches.
-
-TEXT: "Mutual inductive types don't generate right, oops?"
-ISSUE: "don't generate right" is unclear—does this mean "aren't generated correctly" or "don't compile correctly"?
-
-TEXT: "That sounds great, but proving the most useful properties requires `validate` _terminates_--not an easy proof at all."
-ISSUE: Grammatically incomplete—should be "requires that `validate` terminates" or "requires proving `validate` terminates."
-
-TEXT: "TypeScript lets you gradually define types to assign properties of variables at locations in the code"
-ISSUE: "assign properties of variables at locations" is unclear—does this mean "specify the types of variables at different code locations"?
-
-TEXT: "Nested inductives are massaged much more to make them appear normal."
-ISSUE: "massaged" is an unclear metaphor in this technical context—what specific transformation is meant?
-
-## Analysis for a CS major familiar with JSON and some Lean:
-
-**TEXT:** "Since testing is not as well centralized compared to JSON Schema, I mainly picked examples from the RFC and looked at Haskell equivalents. For implementation, I started with hoping Claude could read and execute the spec, then rewriting it when it got ugly. Since I hold parser combinators close to heart, I started with some hand-written [`Std.Internal.Parsec.String`](https://leanprover-community.github.io/mathlib4_docs/Std/Internal/Parsec/String.html), and tried to work within that monad, making the code more uniform."
-
-**ISSUE:** This describes personal implementation choices (using Claude, preferring parser combinators) without explaining why these choices matter or what the reader learns from them. It's process narrative rather than useful technical content.
-
----
-
-**TEXT:** "## Step 1.1.1: Testing" (entire section through the TestM code)
-
-**ISSUE:** This tangent about building a custom testing library doesn't contribute to understanding JSON Schema validation or type-safe plotting. For a reader interested in the main topic, this is a detour that provides no transferable value.
-
----
-
-**TEXT:** "I doubt I'll use this long-term, since having IO in all your tests is a blessing and a curse. There are too many features I want in a proper testing library to use my hacky version forever."
-
-**ISSUE:** This admission that the testing library won't be used undermines the value of the previous section. If it's temporary and incomplete, why include it?
-
----
-
-**TEXT:** "### A slight detour: Json Pointer Fragments / For referring to definitions within files, say `#/definitions/A/`, any JSON "pointer fragment" can be used. [RFC 6901](https://www.rfc-editor.org/rfc/rfc6901) describes the format..."
-
-**ISSUE:** This brief mention is too cursory to be useful but interrupts the flow. Either explain JSON Pointer properly or skip it entirely.
-
----
-
-**TEXT:** "Nested inductives are massaged much more to make them appear normal. They are reorganized as an ordinary inductive, and then new definitions are used to create the appearance of the original nested inductive."
-
-**ISSUE:** This explanation of Lean's internal handling of nested inductives is vague and doesn't help the reader understand what practical problem this creates or how to work with it.
-
----
-
-**TEXT:** "Worse, you cannot include dependent terms in inductive data types. The kernel will error with `nested inductive datatypes parameters cannot contain local variables`, which retains some mystery to me."
-
-**ISSUE:** Admitting confusion while presenting a complex error doesn't help the reader. Either explain the issue or omit it.
-
----
-
-**TEXT:** The code blocks showing `TestTree`, `TestState`, `TestM`, `TypeDefinition`, `Config`, `SchemaID`, `CodeGenContext`, and `SchemaGen` definitions
-
-**ISSUE:** These type definitions are presented with minimal context about when or why a reader would use them. They appear to be reference material without instructional value.
-
----
-
-**TEXT:** "Although this "attach" framework works well (and automatically) for lists and arrays, we lack those theorems for `Std.TreeMap`. After combing through `Std.TreeMap`'s source code with Claude Code, I learned about [`Std.DTreeMap.Internal.Impl.toListModel`](...)."
-
-**ISSUE:** The process of discovering this (combing source with Claude) doesn't help readers understand when they'd need this technique or how to apply it themselves.
-
----
-
-**TEXT:** "### List equality was a pain / Lawful equality already exists for `List α`, but it expects an existing instance of equality for `α`. For a particular subtyping proof, I needed a `ReflBEq Json` (`∀x : Json, x == x`); I hoped to use `ReflBEq (List α)`. At the time, I ran out of patience and cleverness trying to prove a termination goal, so I reimplemented the lemma instead."
-
-**ISSUE:** This describes a dead-end and workaround without explaining what the actual problem was or how the reimplementation helped. It's a complaint rather than useful information.
-
----
-
-**TEXT:** "There was a lot of rewriting and sublemmas for all the different `JsonType` constructors, especially for object subtyping, but I was mainly correcting the plan, ensuring that required and optional types behaved correctly, and trying a bunch of examples. I won't go any further into the proofs for the strategies for object subtyping, since it granted me no more insight."
-
-**ISSUE:** This explicitly states the section won't provide insight, making the reader question why the subtyping section was included at all if the details are being skipped.
-
----
-
-**TEXT:** "I had Claude Code make a macro that would construct ObjectFields using `obj{}` notation, since I could just point it at the existing macro for list syntax `[a, b, c]`."
-
-**ISSUE:** Mentioning that Claude wrote code without showing or explaining the macro provides no value. The reader can't learn or apply this.
-
----
-
-**TEXT:** "When I learned about this, I decided that I should stop looking at the TypeScript source code."
-
-**ISSUE:** This aside about avoiding TypeScript source code is a personal decision that doesn't inform the reader about anything technical.
-
----
-
-**Overall:** The text would benefit from focusing on the core narrative (JSON validation → code generation problems → subtyping solution → plotting) and removing or condensing the implementation war stories and dead-ends that don't transfer knowledge to the reader.
+TEXT: The entire second half of the post (after the demo section)
+ISSUE: A user "in a hurry" would need to read ~200 words (intro + caveats + demo) but is confronted with ~3000+ words of implementation details, failed experiments, and alternative approaches. The signal-to-noise ratio becomes extremely poor after the demo ends.

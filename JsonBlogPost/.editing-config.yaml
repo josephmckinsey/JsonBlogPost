@@ -12,14 +12,14 @@ profiles:
 
   subtyping-is-useful-check:
     checks: [function]
-    reader: "a CS major familiar with Json and some Lean that subtyping is a promising direction"
+    reader: "a Lean library author that subtyping is an option worth trying for more sensitive tasks worth the effort"
     function: "convince"
     model: openrouter/anthropic/claude-sonnet-4.5
     output_format: streaming
 
   user-in-a-hurry-check:
     checks: [function]
-    reader: "a Lean user in a hurry that `json-schema-json` is a decent choice for Json validation"
+    reader: "a Lean user in a hurry that `json-schema-lean` is a decent choice for Json validation"
     function: "inform"
     model: openrouter/anthropic/claude-sonnet-4.5
     output_format: streaming

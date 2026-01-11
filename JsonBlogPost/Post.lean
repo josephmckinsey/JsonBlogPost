@@ -53,18 +53,77 @@ end
 
 set_option pp.rawOnError true
 
-#doc (Page) "Type-safe JSON in Lean: json-schema-lean or subtyping" =>
+#doc (Page) "Safe JSON in Lean: json-schema-lean or subtyping" =>
 
-To have type-safe JSON in most languages, you can create specialized data types or you can validate during runtime.
 I wanted to explore using [Vega-Lite](https://vega.github.io/vega-lite/) for plotting in Lean, and
 I wanted to have some safety check. VegaLite has a [JSON schema](https://vega.github.io/schema/vega-lite/v6.4.1.json).
 One giant PR later, [`json-schema-lean`](https://github.com/CAIMEOX/json-schema-lean/) can
-now validate plotting configs. At present, the library hasn't been battle-tested, but it supports Draft 7 JSON Schema with the
-exception of file/http remote references. Along the way, I had to make a URI library
-[`lean-uri`](https://github.com/josephmckinsey/lean-uri). If you only want to see it in action,
-skip to {ref plot}[the end].
+now validate plotting configs. It is ready for some broader testing of more diverse schema,
+and it should be helpful for statically known single-file schemas. Caveats:
+- Only supports JSON Schema Draft 7
+- Does not support automatic file/http remote reference resolution
+- Not battle-tested, only regular tested
 
-Since creating specialized data types is often more convenient, after getting the basics of validation,
+Along the way, I also made a URI library [`lean-uri`](https://github.com/josephmckinsey/lean-uri).
+
+# {label plot}[A Quick Demo]
+
+There is a single file for VegaLite's schema, so we load in the Vega-Lite schema with `include_str`, parse
+the schema, and validate our data.
+
+```
+import JsonSchema.Validation
+```
+
+```leanInit testing
+```
+
+```lean testing
+def exampleVegaLite : Lean.Json :=
+  Option.get! <| Except.toOption <| Lean.Json.parse r##"{
+  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
+  "data": {"url": "https://vega.github.io/vega-lite/data/seattle-weather.csv"},
+  "mark": "bar",
+  "encoding": {
+    "x": {
+      "timeUnit": "month",
+      "field": "date",
+      "type": "ordinal",
+      "title": "Month of the year"
+    },
+    "y": {
+      "aggregate": "count",
+      "type": "quantitative"
+    },
+    "color": {
+      "field": "weather",
+      "type": "nominal",
+      "scale": {
+        "domain": ["sun", "fog", "drizzle", "rain", "snow"],
+        "range": ["#e7ba52", "#c7c7c7", "#aec7e8", "#1f77b4", "#9467bd"]
+      },
+      "title": "Weather type"
+    }
+  }
+}
+"##
+def vegaliteSchemaStr : String := include_str "v6.4.1.json"
+
+def vegaliteSchema : JsonSchema.Schema :=
+  ((Lean.Json.parse vegaliteSchemaStr) >>= JsonSchema.schemaFromJson
+  ).toOption.get!
+
+#eval JsonSchema.validate vegaliteSchema exampleVegaLite
+```
+
+We can then embed the JSON into an HTML tag and display it as needed:
+
+::::blob exampleVegaLiteVis
+::::
+
+# Options for Type-Level Safety
+
+Since creating specialized data types identifies errors ahead of time,
 I tried my hand at turning schemas into Lean types. But I became dissatisfied with how JSON Schema code generation
 produces unergonomic types, no matter what I try. This mismatch pains me in several languages.
 Meanwhile, most languages don't reason about runtime validation. If you know that a JSON passed validation, then the compiler
@@ -85,7 +144,10 @@ frameworks like [Pandera](https://pandera.readthedocs.io/en/stable/index.html) f
 and limited utility. Using dependent types can invite "dependent type hell", but I had luck
 with just attaching the validation check as a `Prop`. By avoiding ["indexed families"](https://leanprover.github.io/functional_programming_in_lean/dependent-types/indexed-families.html)
 in favor of ["the universe pattern"](https://leanprover.github.io/functional_programming_in_lean/dependent-types/universe-pattern.html),
-we also can more easily vary the underlying implementation.
+we also can more easily vary the underlying implementation. That said, the theorem proving for subtyping
+still require a significant amount of work, so I would only consider it when safety is a
+requirement not a luxury. Usually I am plotting very specific data, where it is easy
+to check after the fact.
 
 By sharing an excessive level of detail below, I aim to encourage more people to work on libraries like
 `json-schema-lean`--Lean needs more libraries in my opinion. I also want to explore the details
@@ -146,9 +208,6 @@ Lean has a way to hook up an executable to [`lake test`](https://github.com/lean
 and that attracted me too. I didn't really like [LSpec](https://github.com/argumentcomputer/LSpec), which appears
 to be the only testing library in Lean. My conclusion: time to write a little testing library. I decided to put it in a
 `Test` monad based on IO, where you can log passed, failed, and skipped tests to monad state, group tests, etc.
-
-```leanInit testing
-```
 
 ```lean testing
 inductive TestTree where
@@ -575,68 +634,15 @@ theorem JsonType.filterUnion_correctness
     (t.filterUnion f).check x = true := by sorry
 ```
 
-# {label plot}[Back to plotting]
 
-I still want to plot something, so how will I do that? I'm not so gung-ho about translating JSON Schema into my JsonType,
-so for now, I'll just do runtime checking with the JSON Schema. Since it's just a plot after all,
-for most of my own purposes, I don't _really_ need to have any guarantee ahead of time.
+## Conclusion
 
-Since there is a single file for the schema, the approach is relatively simple: we load in the Vega-Lite schema with `include_str`, then we can parse
-it and use it to validate.
-
-```
-import JsonSchema.Validation
-```
-
-```lean testing
-def exampleVegaLite : Lean.Json :=
-  Option.get! <| Except.toOption <| Lean.Json.parse r##"{
-  "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
-  "data": {"url": "https://vega.github.io/vega-lite/data/seattle-weather.csv"},
-  "mark": "bar",
-  "encoding": {
-    "x": {
-      "timeUnit": "month",
-      "field": "date",
-      "type": "ordinal",
-      "title": "Month of the year"
-    },
-    "y": {
-      "aggregate": "count",
-      "type": "quantitative"
-    },
-    "color": {
-      "field": "weather",
-      "type": "nominal",
-      "scale": {
-        "domain": ["sun", "fog", "drizzle", "rain", "snow"],
-        "range": ["#e7ba52", "#c7c7c7", "#aec7e8", "#1f77b4", "#9467bd"]
-      },
-      "title": "Weather type"
-    }
-  }
-}
-"##
-def vegaliteSchemaStr : String := include_str "v6.4.1.json"
-
-def vegaliteSchema : JsonSchema.Schema :=
-  ((Lean.Json.parse vegaliteSchemaStr) >>= JsonSchema.schemaFromJson
-  ).toOption.get!
-
-#eval JsonSchema.validate vegaliteSchema exampleVegaLite
-```
-
-We can then embed the JSON into an HTML tag and display it as needed:
-
-::::blob exampleVegaLiteVis
-::::
-
-It should then be relatively simple to make this a [Lean widget](https://lean-lang.org/examples/1900-1-1-widgets/).
-However, the syntax for constructing JSON in Lean is very unergonomic, since we can't combine string formatting
+Despite the potential, creating schemas for all of VegaLite might be more work than I'd
+be willing to go through for plotting, where I only need correctness for my data. Even falling
+back to JSON Schema, there are plenty of opportunities for usability improvements there that would
+more meaningfully change how I use Lean. The syntax for constructing JSON in Lean is very unergonomic, since we can't combine string formatting
 with JSON syntax easily. Creating custom string syntax for JavaScript in general might be more usable
 for using JavaScript libraries in widgets.
-
-## Other potential improvements
 
 String formatting can't be combined with raw strings like `r##""##`, and the default formatting uses `{}`, a common string in
 JavaScript and JSON. Mustache templating with multi-line strings would make it fairly
